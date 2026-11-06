@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Gettomass lower thirds</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #16120f; color: #eee; font: 16px/1.5 system-ui, sans-serif; padding: 24px 16px; }
+  main { max-width: 1000px; margin: 0 auto; display: grid; gap: 28px; }
+  h1 { font-size: 22px; margin: 0; } p { margin: 0; color: #bbb; }
+  .frame { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; }
+  .frame iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; }
+  h2 { font-size: 15px; font-weight: 600; margin: 0 0 8px; color: #ddd; }
+  a { color: #e3c37a; }
+</style></head>
+<body><main>
+  <div><h1>Gettomass lower thirds</h1>
+  <p>Live previews of the code-rendered lower thirds (each 7 s loop, shown over a checkerboard for transparency). <a href="https://github.com/Nongovkelvin/gettomass-lower-thirds">Source on GitHub</a>.</p></div>
+  <section><h2>intro</h2><div class="frame"><iframe src="lower-third.html?v=intro&preview" title="intro"></iframe></div></section>
+  <section><h2>why</h2><div class="frame"><iframe src="lower-third.html?v=why&preview" title="why"></iframe></div></section>
+  <section><h2>cta</h2><div class="frame"><iframe src="lower-third.html?v=cta&preview" title="cta"></iframe></div></section>
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.frame').forEach(f => f.firstElementChild.style.transform = `scale(${f.clientWidth / 1920})`)
+  addEventListener('resize', fit); fit()
+</script>
+</body></html>

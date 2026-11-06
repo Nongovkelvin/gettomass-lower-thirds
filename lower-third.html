@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gettomass lower third</title>
+<style>
+/* A 1920 x 1080 transparent frame. The lower third sits in the title-safe area,
+   bottom left: a paper card with the season-green spine and the liturgical strip,
+   the same "Proper" look as the app. Every frame is drawn from setT(seconds). */
+@font-face { font-family: 'Outfit'; font-weight: 100 900; src: url(outfit-latin.woff2) format('woff2'); font-display: block; }
+:root {
+  --paper: #FAF9F6;
+  --ink: #1B1D1A;
+  --muted: #4B4E47;
+  --green: #1F6B4A;
+  --green-ink: #185A3D;
+  --violet: #4A2B6B;
+  --gold: #B99447;
+}
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+body { font-family: 'Outfit', sans-serif; }
+body.preview { background: repeating-conic-gradient(#555 0 25%, #444 0 50%) 0 0 / 40px 40px; }
+
+.lt { position: absolute; left: 128px; bottom: 120px; display: flex; filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.30)); }
+.spine { width: 12px; background: var(--green); border-radius: 8px 0 0 8px; transform-origin: 50% 100%; }
+.card {
+  position: relative; background: var(--paper); border-radius: 0 8px 8px 0;
+  padding: 30px 48px 32px 34px; max-width: 1060px; display: grid; gap: 6px;
+}
+.strip {
+  position: absolute; left: 0; right: 0; top: 0; height: 7px; transform-origin: 0 50%; border-radius: 0 8px 0 0;
+  background: linear-gradient(90deg, var(--violet) 0 14%, var(--gold) 14% 22%, var(--green) 22% 40%, var(--violet) 40% 48%, var(--gold) 48% 58%, var(--green) 58% 100%);
+}
+.eyebrow { font-size: 25px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--green-ink); margin-top: 6px; }
+.headline { font-size: 56px; font-weight: 600; line-height: 1.08; letter-spacing: -0.015em; color: var(--ink); }
+.sub { font-size: 31px; font-weight: 400; line-height: 1.35; color: var(--muted); margin-top: 4px; }
+.sub b { font-weight: 600; color: var(--green-ink); }
+</style>
+</head>
+<body>
+<div class="lt" id="lt">
+  <div class="spine" id="spine"></div>
+  <div class="card" id="card">
+    <div class="strip" id="strip"></div>
+    <div class="eyebrow" id="eyebrow"></div>
+    <div class="headline" id="headline"></div>
+    <div class="sub" id="sub"></div>
+  </div>
+</div>
+<script>
+const VARIANTS = {
+  intro: {
+    eyebrow: 'gettomass.com',
+    headline: 'Find a Catholic Mass near you',
+    sub: 'Mass, confession and adoration times across Nigeria.<br>Free, with no sign-up.',
+  },
+  why: {
+    eyebrow: 'Why we call parishes',
+    headline: 'We phone parishes to check their times',
+    sub: 'So the times you find on <b>gettomass.com</b> are right before you set out.',
+  },
+  cta: {
+    eyebrow: 'Is your parish listed?',
+    headline: 'Check it, or help us add it',
+    sub: '<b>gettomass.com/links</b>',
+  },
+}
+const params = new URLSearchParams(location.search)
+const v = VARIANTS[params.get('v')] || VARIANTS.intro
+const DURATION = +(params.get('d') || 7)
+for (const k of ['eyebrow', 'headline', 'sub']) document.getElementById(k).innerHTML = v[k]
+if (params.has('preview')) document.body.classList.add('preview')
+
+const $ = id => document.getElementById(id).style
+const clamp = x => Math.min(1, Math.max(0, x))
+const span = (t, a, b) => clamp((t - a) / (b - a))
+const outCubic = x => 1 - (1 - x) ** 3
+const outQuart = x => 1 - (1 - x) ** 4
+const inCubic = x => x ** 3
+
+/** Draws the frame at `t` seconds: in over 1.1 s, hold, out over 0.9 s. */
+window.setT = t => {
+  const out = DURATION - 0.95
+  // In
+  let spine = outCubic(span(t, 0, 0.35))
+  let card = outQuart(span(t, 0.18, 0.78))
+  let strip = outCubic(span(t, 0.5, 1.0))
+  const line = (a) => outCubic(span(t, a, a + 0.42))
+  let text = [line(0.42), line(0.52), line(0.62)]
+  // Out: text first, then the card folds back into the spine, then the spine goes.
+  if (t >= out) {
+    const o = t - out
+    const fade = 1 - inCubic(span(o, 0, 0.28))
+    text = text.map(x => x * fade)
+    strip *= 1 - span(o, 0.05, 0.3)
+    card = 1 - inCubic(span(o, 0.12, 0.55))
+    spine = 1 - inCubic(span(o, 0.5, 0.85))
+    $('spine').transformOrigin = '50% 0'
+  } else {
+    $('spine').transformOrigin = '50% 100%'
+  }
+  $('spine').transform = `scaleY(${spine})`
+  $('card').clipPath = `inset(0 ${(1 - card) * 100}% 0 0)`
+  $('strip').transform = `scaleX(${strip})`
+  ;['eyebrow', 'headline', 'sub'].forEach((id, i) => {
+    $(id).opacity = text[i]
+    $(id).transform = `translateY(${(1 - text[i]) * 18}px)`
+  })
+  $('lt').filter = card > 0.01 ? '' : 'none'
+}
+// ?preview loops the animation live in a browser (the renderer never sets it).
+if (params.has('preview')) {
+  const t0 = performance.now()
+  const tick = now => { setT(((now - t0) / 1000) % (DURATION + 0.6)); requestAnimationFrame(tick) }
+  requestAnimationFrame(tick)
+} else {
+  setT(+(params.get('t') ?? 2))
+}
+</script>
+</body>
+</html>
